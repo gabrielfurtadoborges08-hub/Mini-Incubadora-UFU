@@ -5,7 +5,7 @@
 #include <DHT.h>
 
 // ================= DISPLAY LCD I2C =================
-// Se o display não funcionar com 0x27, troque para 0x3F
+// Se o display nao funcionar com 0x27, troque para 0x3F
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 // ================= DHT22 =================
@@ -16,10 +16,14 @@ DHT dht(DHTPIN, DHTTYPE);
 // ================= LEDS =================
 #define LED_AQUECER 18
 #define LED_ESFRIAR 19
+#define LED_IDEAL 23
 
-// ================= LIMITES =================
+// ================= LIMITES DE TEMPERATURA =================
+// Para teste em sala
+float tempMin = 30.0;
+float tempMax = 36.5;
 
-// Para incubadora depois, se quiser:
+// Para apresentar como incubadora, voces podem trocar depois para:
 // float tempMin = 36.0;
 // float tempMax = 37.5;
 
@@ -44,18 +48,21 @@ const unsigned long intervalo = 2000;
 void lerDHT22() {
   float t = dht.readTemperature();
   float u = dht.readHumidity();
+if (isnan(t) || isnan(u)) {
+  erroDHT = true;
+  statusSistema = "Erro";
+  textoStatus = "Erro no sensor";
 
-  if (isnan(t) || isnan(u)) {
-    erroDHT = true;
-    statusSistema = "Erro";
-    textoStatus = "Erro no sensor";
+  digitalWrite(LED_AQUECER, HIGH);
+  digitalWrite(LED_ESFRIAR, LOW);
+  digitalWrite(LED_IDEAL, LOW);
+  delay(300);
+  digitalWrite(LED_AQUECER, LOW);
+  delay(300);
 
-    digitalWrite(LED_AQUECER, LOW);
-    digitalWrite(LED_ESFRIAR, LOW);
-
-    Serial.println("Erro ao ler DHT22");
-    return;
-  }
+  Serial.println("Erro ao ler DHT22");
+  return;
+}
 
   erroDHT = false;
   temperatura = t;
@@ -67,6 +74,7 @@ void lerDHT22() {
 
     digitalWrite(LED_AQUECER, HIGH);
     digitalWrite(LED_ESFRIAR, LOW);
+    digitalWrite(LED_IDEAL, LOW);
   } 
   else if (temperatura > tempMax) {
     statusSistema = "Esfriar";
@@ -74,6 +82,7 @@ void lerDHT22() {
 
     digitalWrite(LED_AQUECER, LOW);
     digitalWrite(LED_ESFRIAR, HIGH);
+    digitalWrite(LED_IDEAL, LOW);
   } 
   else {
     statusSistema = "Ideal";
@@ -81,6 +90,7 @@ void lerDHT22() {
 
     digitalWrite(LED_AQUECER, LOW);
     digitalWrite(LED_ESFRIAR, LOW);
+    digitalWrite(LED_IDEAL, HIGH);
   }
 
   Serial.print("Temperatura: ");
@@ -122,7 +132,7 @@ void atualizarDisplay() {
     lcd.print("ESFR");
   } 
   else {
-    lcd.print("OK");
+    lcd.print("IDEAL");
   }
 
   lcd.setCursor(0, 1);
@@ -450,7 +460,7 @@ void paginaPrincipal() {
         <div class="footerLine">Endereco de acesso: <span class="ip">192.168.4.1</span></div>
       </div>
 
-      <div class="project">Projeto academico - ESP32 + DHT22 + LCD I2C + LEDs</div>
+      <div class="project">Projeto academico - ESP32 + DHT22 + LCD I2C + 3 LEDs</div>
 
     </div>
   </div>
@@ -482,12 +492,29 @@ void setup() {
 
   dht.begin();
 
-  pinMode(LED_AQUECER, OUTPUT);
-  pinMode(LED_ESFRIAR, OUTPUT);
+ pinMode(LED_AQUECER, OUTPUT);
+pinMode(LED_ESFRIAR, OUTPUT);
+pinMode(LED_IDEAL, OUTPUT);
 
-  digitalWrite(LED_AQUECER, LOW);
-  digitalWrite(LED_ESFRIAR, LOW);
+// TESTE INICIAL DOS LEDS
+digitalWrite(LED_AQUECER, HIGH);
+digitalWrite(LED_ESFRIAR, LOW);
+digitalWrite(LED_IDEAL, LOW);
+delay(1000);
 
+digitalWrite(LED_AQUECER, LOW);
+digitalWrite(LED_ESFRIAR, HIGH);
+digitalWrite(LED_IDEAL, LOW);
+delay(1000);
+
+digitalWrite(LED_AQUECER, LOW);
+digitalWrite(LED_ESFRIAR, LOW);
+digitalWrite(LED_IDEAL, HIGH);
+delay(1000);
+
+digitalWrite(LED_AQUECER, LOW);
+digitalWrite(LED_ESFRIAR, LOW);
+digitalWrite(LED_IDEAL, LOW);
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Mini Incubadora");
